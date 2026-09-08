@@ -14,15 +14,15 @@ final class AppFixtures
 
     public function load(): void
     {
-        $this->insertExamples();
+        $this->insertItems();
     }
 
-    private function insertExamples(): void
+    private function insertItems(): void
     {
         $items = [
-            'First example item',
-            'Second example item',
-            'Third example item',
+            'First item',
+            'Second item',
+            'Third item',
         ];
 
         foreach ($items as $title) {

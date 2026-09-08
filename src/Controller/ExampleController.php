@@ -53,7 +53,7 @@ final class ExampleController extends Controller
                     $repo = new ExampleRepository($this->db());
                     $repo->create($title);
 
-                    return $this->redirect('/examples');
+                    return $this->redirect('/items');
                 }
             }
         }
