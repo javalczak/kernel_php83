@@ -65,11 +65,7 @@ router.php       ← router dla wbudowanego serwera PHP (dev only)
 
 ## Konfiguracja
 
-Skopiuj `config/database.example.php` do `config/database.php` i uzupełnij dane połączenia:
-
-```bash
-cp config/database.example.php config/database.php
-```
+Uzupełnij dane połączenia w `config/database.php`:
 
 ```php
 return [
