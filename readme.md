@@ -1,6 +1,6 @@
 # Pure Kernel
 
-Autorski micro-framework PHP 8.3 zaprojektowany pod wdrożenie na **shared hostingu przez FTP** — bez Composera na serwerze, bez SSH, bez Dockera.
+Autorski micro-framework PHP 8.3 zaprojektowany pod wdrożenie na **shared hostingu przez FTP** - bez Composera na serwerze, bez SSH, bez Dockera.
 
 ## Dlaczego powstał
 
