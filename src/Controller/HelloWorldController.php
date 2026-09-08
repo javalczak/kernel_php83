@@ -11,6 +11,6 @@ final class HelloWorldController extends Controller
 {
     public function index(Request $request, array $params = []): Response
     {
-        return (new Response())->setContent('Hello World');
+        return $this->render(BASE_PATH . '/templates/home');
     }
 }
