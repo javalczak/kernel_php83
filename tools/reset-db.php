@@ -86,10 +86,9 @@ try {
     $installer->uninstall();
     $installer->install();
 
-    // DB reset alone leaves orphaned files behind (property ids get reused),
-    // so wipe uploaded photos too — they're not tracked in git anyway. Must
-    // run BEFORE fixtures: fixtures themselves copy demo photos into
-    // uploads/, which this would otherwise wipe right back out.
+    // Sam reset schematu pozostawia osierocone pliki (id-ki są reużywane),
+    // dlatego czyścimy też uploads/ — pliki nie są w gicie, więc to bezpieczne.
+    // Musi być PRZED fixtures, bo fixtures kopiują pliki do uploads/.
     $uploadsDir = __DIR__ . '/../uploads';
     if (is_dir($uploadsDir)) {
         $it = new RecursiveIteratorIterator(
