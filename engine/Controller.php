@@ -11,45 +11,46 @@ abstract class Controller
         protected ServiceContainer $container
     ) {}
 
-    protected function getModuleName(): string
-    {
-        preg_match(
-            '#^Module\\\\([^\\\\]+)\\\\#',
-            static::class,
-            $matches
-        );
-
-        if (!isset($matches[1])) {
-            throw new \RuntimeException(
-                'Cannot determine module name from controller: ' . static::class
-            );
-        }
-
-        return $matches[1];
-    }
-
+    /**
+     * Szablon podajesz względem templates/, bez rozszerzenia: 'example/index'.
+     * Zmienne z $data stają się zwykłymi zmiennymi w szablonie.
+     */
     protected function render(string $template, array $data = []): Response
     {
-        $templateFile = $template . '.php';
+        // Szablon nigdy nie pochodzi od użytkownika, ale jedna nieuważna zmiana
+        // w kontrolerze i mielibyśmy "../config/database" — stąd ten warunek.
+        if (preg_match('#^[A-Za-z0-9_/-]+$#', $template) !== 1 || str_contains($template, '..')) {
+            throw new \InvalidArgumentException("Niepoprawna nazwa szablonu: {$template}");
+        }
 
-        if (!file_exists($templateFile)) {
-            return Response::notFound("Brak szablonu: $template");
+        $file = BASE_PATH . '/templates/' . $template . '.php';
+
+        if (!is_file($file)) {
+            return Response::notFound("Brak szablonu: {$template}");
         }
 
         $data['translator'] = $this->container->make('translator');
 
         extract($data);
 
+        // Bufor: szablon drukuje przez echo, a my chcemy to mieć jako string w Response.
         ob_start();
-        require $templateFile;
-        $content = ob_get_clean();
+        require $file;
 
-        return (new Response())->setContent($content);
+        return (new Response())->setContent((string) ob_get_clean());
     }
 
     protected function redirect(string $url, int $code = 302): Response
     {
         return Response::redirect($url, $code);
+    }
+
+    protected function json(array $data, int $code = 200): Response
+    {
+        return (new Response())
+            ->setStatusCode($code)
+            ->addHeader('Content-Type', 'application/json; charset=utf-8')
+            ->setContent(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 
     protected function db(): Database
@@ -61,6 +62,7 @@ abstract class Controller
     {
         /** @var Translator $translator */
         $translator = $this->container->make('translator');
+
         return $translator->trans($key, $params);
     }
 }
