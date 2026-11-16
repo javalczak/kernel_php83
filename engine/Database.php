@@ -24,9 +24,13 @@ class Database
             $this->pdo = new PDO($dsn, $config['user'], $config['password'], [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                // Bez emulacji: zapytanie i dane idą do serwera osobno, więc wartość
+                // nigdy nie staje się częścią SQL-a. To jest cała obrona przed SQL injection.
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]);
         } catch (PDOException $e) {
+            // Komunikat PDO potrafi zawierać login i nazwę bazy — na produkcji
+            // ma to iść do logu, nie na ekran użytkownika.
             throw new \RuntimeException('Błąd połączenia z bazą: ' . $e->getMessage());
         }
     }
@@ -39,6 +43,7 @@ class Database
     {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
+
         return $stmt;
     }
 
@@ -50,7 +55,8 @@ class Database
     public function fetchOne(string $sql, array $params = []): ?array
     {
         $result = $this->query($sql, $params)->fetch();
-        return $result ?: null;
+
+        return $result ?: null; // false z PDO zamieniamy na null
     }
 
     public function fetchColumn(string $sql, array $params = []): mixed
@@ -64,11 +70,11 @@ class Database
 
     public function insert(string $table, array $data): int
     {
-        $columns      = implode(', ', array_keys($data));
-        $placeholders = implode(', ', array_fill(0, count($data), '?'));
+        $kolumny = implode(', ', array_map($this->identifier(...), array_keys($data)));
+        $znaki   = implode(', ', array_fill(0, count($data), '?'));
 
         $this->query(
-            "INSERT INTO $table ($columns) VALUES ($placeholders)",
+            'INSERT INTO ' . $this->identifier($table) . " ($kolumny) VALUES ($znaki)",
             array_values($data)
         );
 
@@ -77,33 +83,26 @@ class Database
 
     public function update(string $table, array $data, array $where): int
     {
-        $set = implode(', ', array_map(
-            fn($col) => "$col = ?",
-            array_keys($data)
-        ));
+        if ($where === []) {
+            throw new \InvalidArgumentException('UPDATE bez WHERE zmieniłby całą tabelę.');
+        }
 
-        $whereClause = implode(' AND ', array_map(
-            fn($col) => "$col = ?",
-            array_keys($where)
-        ));
-
-        $params = [...array_values($data), ...array_values($where)];
+        $set = implode(', ', array_map(fn (string $col): string => $this->identifier($col) . ' = ?', array_keys($data)));
 
         return $this->query(
-            "UPDATE $table SET $set WHERE $whereClause",
-            $params
+            'UPDATE ' . $this->identifier($table) . " SET $set WHERE " . $this->whereClause($where),
+            [...array_values($data), ...array_values($where)]
         )->rowCount();
     }
 
     public function delete(string $table, array $where): int
     {
-        $whereClause = implode(' AND ', array_map(
-            fn($col) => "$col = ?",
-            array_keys($where)
-        ));
+        if ($where === []) {
+            throw new \InvalidArgumentException('DELETE bez WHERE wyczyściłby całą tabelę.');
+        }
 
         return $this->query(
-            "DELETE FROM $table WHERE $whereClause",
+            'DELETE FROM ' . $this->identifier($table) . ' WHERE ' . $this->whereClause($where),
             array_values($where)
         )->rowCount();
     }
@@ -127,38 +126,71 @@ class Database
         $this->pdo->rollBack();
     }
 
+    /**
+     * Wszystko albo nic: wyjątek w callbacku cofa zmiany i leci dalej.
+     * Używaj, gdy zapis dotyczy więcej niż jednej tabeli.
+     */
     public function transaction(callable $callback): mixed
     {
         $this->beginTransaction();
+
         try {
             $result = $callback($this);
             $this->commit();
+
             return $result;
         } catch (\Throwable $e) {
             $this->rollback();
+
             throw $e;
         }
     }
 
     // -------------------------------------------------------------------------
-    // Helpers
+    // Pomocnicze
     // -------------------------------------------------------------------------
 
     public function exists(string $table, array $where): bool
     {
-        $whereClause = implode(' AND ', array_map(
-            fn($col) => "$col = ?",
-            array_keys($where)
-        ));
+        return $this->count($table, $where) > 0;
+    }
 
-        return (bool) $this->fetchColumn(
-            "SELECT COUNT(*) FROM $table WHERE $whereClause",
-            array_values($where)
-        );
+    public function count(string $table, array $where = []): int
+    {
+        $sql = 'SELECT COUNT(*) FROM ' . $this->identifier($table);
+
+        if ($where !== []) {
+            $sql .= ' WHERE ' . $this->whereClause($where);
+        }
+
+        return (int) $this->fetchColumn($sql, array_values($where));
+    }
+
+    /**
+     * Nazwa tabeli albo kolumny w SQL-u. Tego miejsca NIE da się sparametryzować
+     * przez PDO, więc jedyne zabezpieczenie to biała lista znaków + backticki.
+     * Nazwa przychodzi od programisty, ale raz wystarczy wpuścić tu $_GET i jest po bazie.
+     */
+    public function identifier(string $name): string
+    {
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
+            throw new \InvalidArgumentException("Niedozwolona nazwa w SQL: {$name}");
+        }
+
+        return '`' . $name . '`';
     }
 
     public function getPdo(): PDO
     {
         return $this->pdo;
+    }
+
+    /** Warunki łączone przez AND, wartości zawsze jako ? */
+    private function whereClause(array $where): string
+    {
+        return implode(' AND ', array_map(
+            fn (string $col): string => $this->identifier($col) . ' = ?',
+            array_keys($where)
+        ));
     }
 }
