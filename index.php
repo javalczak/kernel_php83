@@ -1,34 +1,40 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Front controller — jedyny plik, przez który wchodzi ruch.
+ * Każdy adres trafia tutaj (na produkcji kieruje go .htaccess, lokalnie router.php).
+ */
+
 require_once __DIR__ . '/autoload.php';
 
+use Engine\Kernel;
+
 if (session_status() === PHP_SESSION_NONE) {
-    // Domyślny session.gc_maxlifetime PHP (1440s / 24min) wygasał
-    // w połowie wypełniania dłuższych formularzy — wydłużono 4x do 5760s / 96min.
-    $sessionLifetime = 1440 * 4;
-    ini_set('session.gc_maxlifetime', (string)$sessionLifetime);
+    // Domyślne 24 minuty PHP potrafią wygasnąć w trakcie wypełniania formularza,
+    // a wygasła sesja to unieważniony token CSRF. Stąd 96 minut.
+    $czasZycia = 1440 * 4;
+    ini_set('session.gc_maxlifetime', (string) $czasZycia);
 
     session_set_cookie_params([
-        'lifetime' => $sessionLifetime,
+        'lifetime' => $czasZycia,
         'path'     => '/',
         'domain'   => '',
-        'secure'   => !empty($_SERVER['HTTPS']),
-        'httponly' => true,
-        'samesite' => 'Lax',
+        'secure'   => !empty($_SERVER['HTTPS']), // po HTTPS ciasteczko nie wyjdzie czystym HTTP
+        'httponly' => true,                      // JavaScript go nie odczyta
+        'samesite' => 'Lax',                     // nie leci przy żądaniach z obcych stron
     ]);
+
     session_start();
 }
 
+// nosniff: przeglądarka nie zgaduje typu pliku. DENY: strony nie da się wsadzić w ramkę
+// (clickjacking). same-origin: nasz adres nie wycieka w nagłówku Referer na obce strony.
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: same-origin');
 
-use Engine\Kernel;
-
 $kernel = new Kernel();
 $kernel->boot();
 
-$request = $kernel->createRequest();
-$response = $kernel->handle($request);
-$response->send();
+$kernel->handle($kernel->createRequest())->send();

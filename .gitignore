@@ -1,7 +1,9 @@
-/uploads/
 /.idea/
-/sources/old_backup/
-/sources/
+/.vscode/
 /.ai/
 
+# Katalog na pliki wgrywane przez użytkowników — treść nie należy do repozytorium
+/uploads/
 
+# Prawdziwa konfiguracja bazy, gdybyś trzymał ją obok przykładowej
+/config/database.local.php
