@@ -6,7 +6,7 @@ namespace App\Entity;
 use Engine\Entity;
 
 /**
- * Przykładowa encja — wiersz tabeli `examples` jako obiekt.
+ * Przykładowa encja - wiersz tabeli `examples` jako obiekt.
  *
  * Właściwości są readonly, więc raz zbudowana encja się nie zmienia.
  * Zmiana = nowy obiekt (withTitle, withId). Dzięki temu nigdy nie trzeba szukać,
@@ -21,7 +21,7 @@ final class Example implements Entity
         public readonly ?string $createdAt = null,
     ) {}
 
-    /** Nowa encja, jeszcze bez id — id nadaje baza przy zapisie. */
+    /** Nowa encja, jeszcze bez id - id nadaje baza przy zapisie. */
     public static function create(string $title, bool $isActive = true): self
     {
         return new self(null, $title, $isActive);

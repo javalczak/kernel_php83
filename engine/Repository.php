@@ -7,7 +7,7 @@ namespace Engine;
  * Baza repozytorium: jedna tabela, jedna encja.
  *
  * Repozytorium konkretnej tabeli dziedziczy po tym i podaje tylko nazwę tabeli
- * i klasę encji. Resztę — findAll, findById, save, delete — dostaje gotową.
+ * i klasę encji. Resztę - findAll, findById, save, delete - dostaje gotową.
  * Zapytania specyficzne dla domeny (np. findActive) dopisujesz w potomku.
  *
  * @template T of Entity
@@ -83,7 +83,7 @@ abstract class Repository
     }
 
     /**
-     * Insert albo update — decyduje id encji.
+     * Insert albo update - decyduje id encji.
      * Po insercie oddaje kopię z nadanym id, bo encja sama o nim nie wie.
      *
      * @param T $entity
@@ -102,7 +102,7 @@ abstract class Repository
         return $entity;
     }
 
-    /** @param int|T $entity id albo sama encja — jak wygodniej w kontrolerze */
+    /** @param int|T $entity id albo sama encja - jak wygodniej w kontrolerze */
     public function delete(int|Entity $entity): void
     {
         $id = $entity instanceof Entity ? $entity->getId() : $entity;

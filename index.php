@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Front controller — jedyny plik, przez który wchodzi ruch.
+ * Front controller - jedyny plik, przez który wchodzi ruch.
  * Każdy adres trafia tutaj (na produkcji kieruje go .htaccess, lokalnie router.php).
  */
 

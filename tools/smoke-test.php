@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  *   php tools/smoke-test.php
  *
- * Działa na tabeli examples w bazie z config/database.php — po sobie sprząta.
+ * Działa na tabeli examples w bazie z config/database.php - po sobie sprząta.
  * To nie są testy jednostkowe z prawdziwego zdarzenia, tylko kontrola,
  * czy po zmianie w silniku CRUD dalej się trzyma kupy.
  */
@@ -27,7 +27,7 @@ use Engine\Database;
 $bledy = 0;
 $zrobione = 0;
 
-/** Zwykły assert z czytelnym opisem — tyle wystarczy. */
+/** Zwykły assert z czytelnym opisem - tyle wystarczy. */
 function sprawdz(string $opis, bool $warunek): void
 {
     global $bledy, $zrobione;

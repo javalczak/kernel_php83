@@ -29,7 +29,7 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]);
         } catch (PDOException $e) {
-            // Komunikat PDO potrafi zawierać login i nazwę bazy — na produkcji
+            // Komunikat PDO potrafi zawierać login i nazwę bazy - na produkcji
             // ma to iść do logu, nie na ekran użytkownika.
             throw new \RuntimeException('Błąd połączenia z bazą: ' . $e->getMessage());
         }

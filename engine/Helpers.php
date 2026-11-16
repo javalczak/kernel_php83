@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 if (!function_exists('dd')) {
     /**
-     * "Dump and die" — pokazuje zmienne i przerywa wykonanie.
+     * "Dump and die" - pokazuje zmienne i przerywa wykonanie.
      *
      * Tylko do pracy lokalnej. Na produkcji taki zrzut wyświetliłby zawartość
      * obiektów (a w nich potrafi siedzieć hasło z konfiguracji) obcej osobie.

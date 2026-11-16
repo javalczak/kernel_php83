@@ -21,7 +21,7 @@ class Translator
 
     /**
      * Wczytuje translations/{locale}.php z podanego katalogu.
-     * Można wołać kilka razy — późniejsze klucze nadpisują wcześniejsze.
+     * Można wołać kilka razy - późniejsze klucze nadpisują wcześniejsze.
      */
     public function load(string $path): void
     {
@@ -62,7 +62,7 @@ class Translator
         return $this->locale;
     }
 
-    /** Nieznany język cicho wraca do domyślnego — strona ma działać, nie wybuchać. */
+    /** Nieznany język cicho wraca do domyślnego - strona ma działać, nie wybuchać. */
     private static function czyste(string $locale): string
     {
         return in_array($locale, self::DOSTEPNE, true) ? $locale : self::DOMYSLNY;

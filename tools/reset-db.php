@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Reset bazy dla dewelopera: drop + create + fixtures.
- * Wyłącznie lokalnie — na produkcji tego pliku po prostu nie wrzucamy na FTP.
+ * Wyłącznie lokalnie - na produkcji tego pliku po prostu nie wrzucamy na FTP.
  */
 
 require_once __DIR__ . '/../autoload.php';
@@ -18,7 +18,7 @@ $config = require __DIR__ . '/../config/database.php';
 // Tryb konsolowy: php tools/reset-db.php --force
 // -------------------------------------------------------------------------
 
-// Z konsoli token jest bez sensu — kto ma dostęp do plików, ma i tak wszystko.
+// Z konsoli token jest bez sensu - kto ma dostęp do plików, ma i tak wszystko.
 if (PHP_SAPI === 'cli') {
     if (!in_array('--force', $argv ?? [], true)) {
         die("Reset usuwa wszystkie tabele. Uruchom: php tools/reset-db.php --force\n");
@@ -41,7 +41,7 @@ if (!in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
 
 $token = $config['reset_token'] ?? null;
 
-// Token z repozytorium zna każdy, kto widział kod — póki go nie zmienisz, wejścia nie ma.
+// Token z repozytorium zna każdy, kto widział kod - póki go nie zmienisz, wejścia nie ma.
 if (!$token || $token === 'change-me-to-a-long-random-string') {
     http_response_code(403);
     die('Ustaw własny reset_token w config/database.php.');
@@ -92,7 +92,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
 }
 
 // -------------------------------------------------------------------------
-// POST — wykonaj reset
+// POST - wykonaj reset
 // -------------------------------------------------------------------------
 
 if (trim((string) ($_POST['confirm'] ?? '')) !== 'RESET') {
@@ -113,17 +113,17 @@ try {
     echo '<pre style="color:#c00;">Błąd: ' . htmlspecialchars($e->getMessage()) . '</pre>';
 }
 
-/** Drop, create, fixtures — wspólne dla trybu konsolowego i przeglądarkowego. */
+/** Drop, create, fixtures - wspólne dla trybu konsolowego i przeglądarkowego. */
 function resetujBaze(array $config): void
 {
-    // Najpierw połączenie BEZ nazwy bazy — inaczej nie da się jej utworzyć, gdy jeszcze nie istnieje.
+    // Najpierw połączenie BEZ nazwy bazy - inaczej nie da się jej utworzyć, gdy jeszcze nie istnieje.
     $configBezBazy = $config;
     $configBezBazy['dbname'] = '';
 
     $db = new Database($configBezBazy);
 
     // Nazwa bazy jest z pliku konfiguracyjnego, nie z requestu, ale i tak przechodzi
-    // przez identifier() — jeden wzorzec na wszystkie nazwy w SQL-u.
+    // przez identifier() - jeden wzorzec na wszystkie nazwy w SQL-u.
     $db->query('CREATE DATABASE IF NOT EXISTS ' . $db->identifier($config['dbname'])
         . ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
 

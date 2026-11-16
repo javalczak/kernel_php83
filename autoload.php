@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Autoloader bez Composera.
  *
  * Mapuje dwa namespace'y na katalogi i ładuje klasę dopiero wtedy, gdy PHP
- * jej faktycznie potrzebuje. To cały "dependency management" tego projektu —
+ * jej faktycznie potrzebuje. To cały "dependency management" tego projektu -
  * nie ma vendor/, więc nie ma czego instalować na serwerze.
  */
 

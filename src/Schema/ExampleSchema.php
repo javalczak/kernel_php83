@@ -7,7 +7,7 @@ namespace App\Schema;
  * Definicja tabeli jako kod PHP, nie plik .sql.
  *
  * Dzięki temu schemat jedzie na serwer razem z resztą przez FTP i instaluje się
- * z przeglądarki — bez konsoli, bez phpMyAdmina, bez migracji Doctrine.
+ * z przeglądarki - bez konsoli, bez phpMyAdmina, bez migracji Doctrine.
  */
 final class ExampleSchema
 {

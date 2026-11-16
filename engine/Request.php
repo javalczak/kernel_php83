@@ -36,7 +36,7 @@ class Request
     }
 
     /**
-     * Pole formularza jako string — i tylko jako string.
+     * Pole formularza jako string - i tylko jako string.
      *
      * Wysyłając pole o nazwie "title[]" dostajesz w $_POST tablicę. Rzutowanie
      * (string) na tablicy to w PHP 8 błąd, czyli 500 zamiast walidacji.

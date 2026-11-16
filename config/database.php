@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Konfiguracja bazy. W repozytorium leżą wartości przykładowe —
+ * Konfiguracja bazy. W repozytorium leżą wartości przykładowe -
  * po sklonowaniu podmień je na swoje i NIE commituj prawdziwych haseł.
  */
 return [

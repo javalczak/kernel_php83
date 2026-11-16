@@ -15,7 +15,7 @@ final class Csrf
     public static function token(): string
     {
         if (empty($_SESSION['csrf_token'])) {
-            // 32 bajty z random_bytes, nie rand() — to ma być nie do odgadnięcia
+            // 32 bajty z random_bytes, nie rand() - to ma być nie do odgadnięcia
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 

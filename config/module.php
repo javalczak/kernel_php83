@@ -6,7 +6,7 @@ use App\Controller\HelloWorldController;
 
 /**
  * Trasy aplikacji. Pierwsza pasująca wygrywa, więc /items/create musi stać
- * przed /items/{id} — inaczej "create" wpadłoby jako {id}.
+ * przed /items/{id} - inaczej "create" wpadłoby jako {id}.
  */
 return [
     'name'    => 'my-app',

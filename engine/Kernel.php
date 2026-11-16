@@ -77,7 +77,7 @@ class Kernel
     private function registerCoreServices(): void
     {
         // singleton, nie bind: połączenie z bazą ma powstać raz na żądanie i dopiero
-        // przy pierwszym użyciu — strona bez zapytań do bazy w ogóle go nie otwiera.
+        // przy pierwszym użyciu - strona bez zapytań do bazy w ogóle go nie otwiera.
         $this->container->singleton('db', function () {
             $config = require BASE_PATH . '/config/database.php';
 

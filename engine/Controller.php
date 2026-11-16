@@ -18,7 +18,7 @@ abstract class Controller
     protected function render(string $template, array $data = []): Response
     {
         // Szablon nigdy nie pochodzi od użytkownika, ale jedna nieuważna zmiana
-        // w kontrolerze i mielibyśmy "../config/database" — stąd ten warunek.
+        // w kontrolerze i mielibyśmy "../config/database" - stąd ten warunek.
         if (preg_match('#^[A-Za-z0-9_/-]+$#', $template) !== 1 || str_contains($template, '..')) {
             throw new \InvalidArgumentException("Niepoprawna nazwa szablonu: {$template}");
         }

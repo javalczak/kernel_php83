@@ -12,7 +12,7 @@ use Engine\Response;
 
 /**
  * Pełny przykład CRUD na encjach: lista, podgląd, dodawanie, usuwanie, szukanie.
- * Kontroler zajmuje się tylko HTTP — walidacja siedzi w ExampleService.
+ * Kontroler zajmuje się tylko HTTP - walidacja siedzi w ExampleService.
  */
 final class ExampleController extends Controller
 {
@@ -52,7 +52,7 @@ final class ExampleController extends Controller
             $title = $request->string('title');
 
             if (!Csrf::verify($request->string('csrf_token'))) {
-                // Wygasła sesja wygląda jak atak CSRF i odwrotnie — komunikat ten sam.
+                // Wygasła sesja wygląda jak atak CSRF i odwrotnie - komunikat ten sam.
                 $errors['form'] = $this->trans('example.errors.csrf');
             } else {
                 try {

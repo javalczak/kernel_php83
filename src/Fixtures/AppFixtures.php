@@ -8,7 +8,7 @@ use App\Repository\ExampleRepository;
 use Engine\Database;
 
 /**
- * Dane startowe dla środowiska dev — ładowane przez tools/reset-db.php.
+ * Dane startowe dla środowiska dev - ładowane przez tools/reset-db.php.
  * Zapisujemy przez repozytorium i encje, czyli tą samą drogą co aplikacja.
  */
 final class AppFixtures

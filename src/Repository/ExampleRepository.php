@@ -10,7 +10,7 @@ use Engine\Repository;
 /**
  * Repozytorium tabeli `examples`.
  *
- * Cały CRUD przychodzi z Engine\Repository — tu zostaje tylko to,
+ * Cały CRUD przychodzi z Engine\Repository - tu zostaje tylko to,
  * co dotyczy tej jednej domeny. Tak samo buduje się każde kolejne repozytorium.
  *
  * @extends Repository<Example>
@@ -39,7 +39,7 @@ final class ExampleRepository extends Repository
     }
 
     /**
-     * Przykład zapytania pisanego ręcznie — gdy findBy już nie wystarcza.
+     * Przykład zapytania pisanego ręcznie - gdy findBy już nie wystarcza.
      * Wartość zawsze idzie przez ?, nigdy przez sklejanie stringa.
      *
      * @return list<Example>

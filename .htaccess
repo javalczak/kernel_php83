@@ -1,5 +1,5 @@
 # Front controller dla Apache (shared hosting).
-# Wbudowany serwer PHP tego pliku nie czyta — tam rolę pełni router.php.
+# Wbudowany serwer PHP tego pliku nie czyta - tam rolę pełni router.php.
 
 RewriteEngine On
 

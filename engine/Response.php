@@ -9,7 +9,7 @@ class Response
     private int $statusCode = 200;
 
     // Domyślny typ treści. Bez charset=utf-8 przeglądarka zgaduje kodowanie
-    // i polskie znaki potrafią się rozsypać — razem z nagłówkiem nosniff to must have.
+    // i polskie znaki potrafią się rozsypać - razem z nagłówkiem nosniff to must have.
     private array $headers = ['Content-Type' => 'text/html; charset=utf-8'];
 
     public function setContent(string $content): static
