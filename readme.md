@@ -1,154 +1,177 @@
 # Pure Kernel
 
-Autorski micro-framework PHP 8.3 zaprojektowany pod wdrożenie na **shared hostingu przez FTP** - bez Composera na serwerze, bez SSH, bez Dockera.
+Autorski micro-framework PHP 8.3 pod wdrożenie na **shared hostingu przez FTP** — bez Composera na serwerze, bez SSH, bez Dockera.
 
 ## Dlaczego powstał
 
-Popularne frameworki PHP (Symfony, Laravel) zakładają dostęp do terminala i możliwość uruchomienia `composer install` na serwerze. Na najtańszych hostingach współdzielonych tego nie ma — jest tylko FTP i panel cPanel. Pure Kernel rozwiązuje ten problem: cały kod działa od razu po wrzuceniu plików, bez żadnego kroku instalacji po stronie serwera.
+Symfony i Laravel zakładają, że na serwerze da się odpalić `composer install`. Na najtańszych hostingach współdzielonych nie ma ani konsoli, ani SSH — jest FTP i panel. Pure Kernel rozwiązuje ten problem wprost: wrzucasz pliki, uzupełniasz dane bazy i strona działa. Żadnego kroku instalacyjnego po stronie serwera.
+
+Drugi powód jest taki, że chciałem mieć szkielet, w którym rozumiem każdą linię. Przy pięciu klasach silnika da się to ogarnąć w godzinę; przy Symfony nie da się wcale.
 
 ## Wymagania
 
-- PHP 8.3+
-- MySQL
-- Rozszerzenia PHP: `pdo_mysql`, `fileinfo`
+- PHP 8.3 lub nowszy
+- MySQL 5.7+ / MariaDB
+- Rozszerzenie `pdo_mysql`
 
-Composer nie jest wymagany.
+Composer nie jest potrzebny — ani lokalnie, ani na serwerze.
+
+## Szybki start
+
+```bash
+git clone git@github.com:javalczak/kernel_php83.git
+cd kernel_php83
+```
+
+Uzupełnij `config/database.php`, potem:
+
+```bash
+php tools/reset-db.php --force     # zakłada bazę, tabele i dane startowe
+php -S localhost:8000 router.php
+```
+
+Wejdź na `http://localhost:8000` — strona główna i działający CRUD pod `/items`.
 
 ## Architektura
 
-Front Controller + MVC, ~7 klas silnika, zero zewnętrznych zależności.
+Front controller + MVC, dziewięć klas silnika i jeden interfejs, zero zewnętrznych zależności.
 
 ```
-Request → Kernel::handle()
-              ↓
-          Router::match()       ← dopasowanie {parametrów} przez regex
-              ↓
-          Controller::action()
-              ↓
-          Response::send()
+Żądanie → index.php (front controller)
+             ↓
+         Kernel::handle()
+             ↓
+         Router::match()        ← dopasowanie {parametrów}, nazwy tras przez preg_quote
+             ↓
+         Controller::akcja()
+             ↓                  ← Repository → Entity (obiekty, nie tablice)
+         Response::send()
 ```
 
 ### Klasy silnika (`engine/`)
 
 | Klasa | Odpowiedzialność |
 |---|---|
-| `Kernel` | Bootstrap, wstrzykiwanie serwisów, obsługa żądania |
-| `Router` | Rejestracja i dopasowywanie tras z `{parametrami}` |
-| `Request` | Immutable wrapper na `$_GET`, `$_POST`, `$_FILES`, `$_SERVER`, `$_COOKIE` |
-| `Response` | Fluent builder odpowiedzi HTTP |
-| `Controller` | Abstrakcyjna baza — `render()`, `redirect()`, `db()`, `trans()` |
-| `Database` | Wrapper PDO: `fetchAll`, `fetchOne`, `insert`, `update`, `delete`, `transaction` |
-| `ServiceContainer` | Prosty IoC container — `bind()` (transient) i `singleton()` |
-| `Translator` | Tłumaczenia z `%placeholderami%`, obsługa nadpisywania przez aplikację |
+| `Kernel` | Bootstrap, serwisy, dopasowanie trasy i wywołanie kontrolera |
+| `Router` | Rejestracja i dopasowanie tras z `{parametrami}` |
+| `Request` | Opakowanie na `$_GET`, `$_POST`, `$_FILES`, `$_SERVER`, `$_COOKIE` + `string()` i `int()` |
+| `Response` | Budowanie odpowiedzi HTTP, domyślnie `text/html; charset=utf-8` |
+| `Controller` | Baza kontrolerów — `render()`, `redirect()`, `json()`, `db()`, `trans()` |
+| `Database` | PDO: `fetchAll`, `fetchOne`, `insert`, `update`, `delete`, `transaction`, `identifier` |
+| `Repository` | Baza repozytoriów: CRUD na encjach dla jednej tabeli |
+| `Entity` | Interfejs encji: `fromRow()`, `toRow()`, `getId()`, `withId()` |
+| `ServiceContainer` | Prosty kontener — `bind()` (za każdym razem nowy) i `singleton()` |
+| `Translator` | Tłumaczenia z `%placeholderami%`, język z ciasteczka `locale` |
 
 ### Autoloader
 
-Własna implementacja PSR-style bez Composera — `autoload.php` mapuje dwa namespace'y:
+Własny, bez Composera. `autoload.php` mapuje dwa namespace'y:
 
 ```
 Engine\  →  engine/
 App\     →  src/
 ```
 
-## Struktura projektu
+## Encje
 
-```
-engine/          ← silnik frameworka
-config/          ← konfiguracja bazy danych i tras
-src/             ← kod referencyjny aplikacji (patrz niżej)
-templates/       ← szablony PHP aplikacji referencyjnej
-tools/           ← narzędzia deweloperskie (reset bazy)
-index.php        ← entry point
-autoload.php     ← autoloader (bez Composera)
-router.php       ← router dla wbudowanego serwera PHP (dev only)
-```
+Repozytorium nie oddaje tablic z bazy, tylko obiekty. Zamiast `$item['title']`, gdzie literówka wychodzi dopiero na produkcji, jest `$item->title`, które sprawdza PHP i podpowiada IDE.
 
-## Konfiguracja
-
-Uzupełnij dane połączenia w `config/database.php`:
+Encja to zwykła klasa z dwiema metodami mapującymi — bez ORM-a, bez refleksji, bez adnotacji:
 
 ```php
-return [
-    'host'     => 'localhost',
-    'dbname'   => 'nazwa_bazy',
-    'user'     => 'uzytkownik',
-    'password' => 'haslo',
-    'charset'  => 'utf8mb4',
-];
-```
-
-## Uruchomienie lokalne
-
-```bash
-php -S localhost:8000 router.php
-```
-
-## Trasy
-
-Trasy definiuje się w `config/module.php` jako tablica asocjacyjna:
-
-```php
-['method' => 'GET',  'path' => '/listing/{slug}', 'controller' => ListingController::class, 'action' => 'show'],
-['method' => 'POST', 'path' => '/listing/{slug}', 'controller' => ListingController::class, 'action' => 'update'],
-```
-
-Parametry `{slug}` są automatycznie wyodrębniane i przekazywane do metody kontrolera.
-
-## Przykład kontrolera
-
-```php
-<?php
-declare(strict_types=1);
-
-namespace App\Controller;
-
-use Engine\Controller;
-use Engine\Request;
-use Engine\Response;
-
-class ListingController extends Controller
+final class Example implements Entity
 {
-    public function show(Request $request, array $params): Response
+    public function __construct(
+        public readonly ?int $id,
+        public readonly string $title,
+        public readonly bool $isActive = true,
+        public readonly ?string $createdAt = null,
+    ) {}
+
+    public static function fromRow(array $row): static
     {
-        $slug    = $params['slug'];
-        $listing = $this->db()->fetchOne('SELECT * FROM properties WHERE slug = ?', [$slug]);
+        return new self((int) $row['id'], (string) $row['title'], (bool) $row['is_active'], $row['created_at'] ?? null);
+    }
 
-        if ($listing === null) {
-            return Response::notFound();
-        }
-
-        return $this->render(BASE_PATH . '/templates/listing/show', [
-            'listing' => $listing,
-        ]);
+    public function toRow(): array
+    {
+        return ['title' => $this->title, 'is_active' => (int) $this->isActive];
     }
 }
 ```
 
+Właściwości są `readonly`, więc encja po zbudowaniu się nie zmienia. Zmiana to nowy obiekt (`withTitle()`, `withId()`) — nie trzeba szukać, kto podmienił pole w połowie żądania.
+
+Repozytorium konkretnej tabeli podaje tylko nazwę tabeli i klasę encji, resztę dziedziczy:
+
+```php
+final class ExampleRepository extends Repository
+{
+    protected function table(): string { return ExampleSchema::TABLE; }
+    protected function entityClass(): string { return Example::class; }
+
+    public function findActive(): array
+    {
+        return $this->findBy(['is_active' => 1], 'created_at DESC');
+    }
+}
+```
+
+Z klasy bazowej dostajesz `findAll()`, `findById()`, `findBy()`, `findOneBy()`, `count()`, `save()` i `delete()`. `save()` sam decyduje między INSERT a UPDATE na podstawie `id` encji.
+
+## Trasy
+
+Trasy to tablica w `config/module.php`:
+
+```php
+['method' => 'GET',  'path' => '/items/{id}',        'controller' => ExampleController::class, 'action' => 'show'],
+['method' => 'POST', 'path' => '/items/{id}/delete', 'controller' => ExampleController::class, 'action' => 'delete'],
+```
+
+Pierwsza pasująca trasa wygrywa, więc `/items/create` musi stać przed `/items/{id}`. Parametry `{id}` trafiają do metody kontrolera jako `$params`.
+
+Aplikacja może dorzucić własny plik `src/routes.php` w tym samym formacie, żeby nie puchł główny config.
+
+## Przykładowa aplikacja (`src/`, `templates/`)
+
+W repozytorium jest kompletny, działający CRUD: lista z wyszukiwarką, podgląd, dodawanie z walidacją i usuwanie. Pokazuje wszystkie warstwy naraz:
+
+- **Entity** (`src/Entity/Example.php`) — wiersz jako obiekt
+- **Repository** (`src/Repository/ExampleRepository.php`) — zapytania do jednej tabeli
+- **Service** (`src/Service/ExampleService.php`) — reguły domenowe i przykład transakcji
+- **Schema** (`src/Schema/`) — DDL jako kod PHP, instalowalny z przeglądarki
+- **Fixtures** (`src/Fixtures/AppFixtures.php`) — dane startowe dla deva
+- **Security** (`src/Security/Csrf.php`) — token CSRF dla formularzy
+
+Przykłady są celowo kompletne: łatwiej skopiować działający wzorzec niż odtwarzać go z dokumentacji.
+
 ## Bezpieczeństwo
 
-Wbudowane w szkielet frameworka:
+Co jest wbudowane w szkielet:
 
-- Nagłówki HTTP: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`
-- Sesja: `HttpOnly`, `SameSite=Lax`, czas życia 96 min
-- Baza danych: PDO z `ATTR_EMULATE_PREPARES = false` i `ERRMODE_EXCEPTION`
+- **SQL**: PDO z `ATTR_EMULATE_PREPARES = false` — wartości nigdy nie są częścią zapytania. Nazwy tabel i kolumn, których nie da się przekazać przez parametr, przechodzą przez `Database::identifier()` (biała lista znaków + backticki). `ORDER BY` jest walidowany osobno. `UPDATE` i `DELETE` bez `WHERE` rzucają wyjątkiem.
+- **CSRF**: token sesyjny porównywany przez `hash_equals()`, wymagany w każdym formularzu POST. Usuwanie wyłącznie POST-em.
+- **Sesja**: `HttpOnly`, `SameSite=Lax`, `secure` po HTTPS, czas życia 96 minut.
+- **Nagłówki**: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
+- **Ścieżki**: język z ciasteczka ograniczony białą listą (bez tego ciasteczko `locale` wczytywało dowolny plik PHP), nazwy szablonów walidowane, serwer deweloperski oddaje pliki tylko z `assets/` i `tools/`.
+- **XSS**: wszystkie dane w szablonach idą przez `htmlspecialchars()`.
 
-Wzorce bezpieczeństwa w kodzie referencyjnym (`src/`):
+Czego tu nie ma, a bywa potrzebne: logowania i haseł, uploadu plików, limitów na liczbę żądań. To dokłada się per projekt.
 
-- Hasła: `password_hash()` z `PASSWORD_BCRYPT`, cost 12, timing-safe porównanie
-- CSRF: tokeny sesyjne weryfikowane przez `hash_equals()`
-- Upload plików: walidacja MIME przez `finfo`, whitelist rozszerzeń, losowe nazwy plików, limit 8 MB
+## Wdrożenie na shared hosting
 
-## Kod referencyjny (`src/`)
+1. Wgraj przez FTP całość **oprócz** `tools/` i `router.php`.
+2. Uzupełnij `config/database.php` danymi z panelu hostingu.
+3. Upewnij się, że `.htaccess` wjechał razem z resztą (bywa ukryty w kliencie FTP) — to on kieruje cały ruch do `index.php` i blokuje dostęp do `config/`, `engine/`, `src/` i `templates/`.
+4. Tabele załóż raz, lokalnie, i wyeksportuj dumpa — albo wgraj `tools/` na chwilę, odpal reset i skasuj katalog.
 
-Katalog `src/`, `templates/` oraz `config/module.php` zawierają **kod referencyjny** z aplikacji *Fiestalettings* — platformy bezpośredniego wynajmu nieruchomości wakacyjnych (Cypr). Nie jest to działająca, kompletna aplikacja, ale przykład wzorców stosowanych podczas budowania na tym silniku.
+## Narzędzia deweloperskie (`tools/`)
 
-Wzorce zastosowane w kodzie referencyjnym:
+```bash
+php tools/reset-db.php --force   # drop + create + fixtures
+php tools/smoke-test.php         # 24 sprawdzenia encji, repozytorium i walidacji
+```
 
-- **Repository** — jeden obiekt na tabelę, zapytania przez PDO z prepared statements
-- **Schema** — definicje DDL jako klasy PHP, `SchemaInstaller` z określoną kolejnością instalacji i seedowania
-- **Service** — wydzielona logika współdzielona między kontrolerami (np. `PhotoUploader`)
-- **Fixtures** — seeder bazy danych dla środowiska dev/demo
+`reset-db.php` działa też z przeglądarki (`/tools/reset-db.php?token=…`), ale tylko z localhosta i tylko z tokenem z konfiguracji. Na produkcję tego katalogu się nie wgrywa.
 
-## Narzędzia deweloperskie
-
-`tools/reset-db.php` — przeglądarkowe narzędzie do resetowania bazy danych (drop + recreate + seed). Dostęp chroniony tokenem z `config/database.php`. Przeznaczone wyłącznie do użytku lokalnego.
+`smoke-test.php` to świadomie proste rozwiązanie: projekt nie używa Composera, więc nie ma w nim PHPUnita. Testy robią przejście przez prawdziwą bazę i sprzątają po sobie.
