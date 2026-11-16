@@ -3,41 +3,54 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use Engine\Database;
+use App\Entity\Example;
 use App\Schema\ExampleSchema;
+use Engine\Repository;
 
-final class ExampleRepository
+/**
+ * Repozytorium tabeli `examples`.
+ *
+ * Cały CRUD przychodzi z Engine\Repository — tu zostaje tylko to,
+ * co dotyczy tej jednej domeny. Tak samo buduje się każde kolejne repozytorium.
+ *
+ * @extends Repository<Example>
+ */
+final class ExampleRepository extends Repository
 {
-    private string $table = ExampleSchema::TABLE;
-
-    public function __construct(
-        private Database $db
-    ) {}
-
-    public function findAll(): array
+    protected function table(): string
     {
-        return $this->db->fetchAll(
-            "SELECT * FROM {$this->table} ORDER BY created_at DESC"
+        return ExampleSchema::TABLE;
+    }
+
+    protected function entityClass(): string
+    {
+        return Example::class;
+    }
+
+    /**
+     * Przykład własnego zapytania: findBy robi WHERE is_active = 1,
+     * a sortowanie przechodzi przez walidację w klasie bazowej.
+     *
+     * @return list<Example>
+     */
+    public function findActive(): array
+    {
+        return $this->findBy(['is_active' => 1], 'created_at DESC');
+    }
+
+    /**
+     * Przykład zapytania pisanego ręcznie — gdy findBy już nie wystarcza.
+     * Wartość zawsze idzie przez ?, nigdy przez sklejanie stringa.
+     *
+     * @return list<Example>
+     */
+    public function searchByTitle(string $fragment): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT * FROM ' . $this->db->identifier($this->table()) . ' WHERE title LIKE ? ORDER BY title',
+            ['%' . $fragment . '%']
         );
-    }
 
-    public function findById(int $id): ?array
-    {
-        return $this->db->fetchOne(
-            "SELECT * FROM {$this->table} WHERE id = ?",
-            [$id]
-        );
-    }
-
-    public function create(string $title): int
-    {
-        return $this->db->insert($this->table, [
-            'title' => $title,
-        ]);
-    }
-
-    public function delete(int $id): void
-    {
-        $this->db->delete($this->table, ['id' => $id]);
+        return $this->hydrateAll($rows);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 /** @var array $errors */
+/** @var string $title */
 /** @var string $csrfToken */
 /** @var \Engine\Translation\Translator $translator */
 $pageTitle = $translator->trans('example.create.title');
@@ -17,16 +18,16 @@ require BASE_PATH . '/templates/_partials/_header.php';
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
     <div class="form-group">
-        <label for="title">Title</label>
+        <label for="title">Tytuł</label>
         <?php if (!empty($errors['title'])): ?>
             <div class="error"><?= htmlspecialchars($errors['title']) ?></div>
         <?php endif; ?>
-        <input type="text" id="title" name="title" autofocus>
+        <input type="text" id="title" name="title" value="<?= htmlspecialchars($title) ?>" autofocus>
     </div>
 
     <div style="display:flex; gap:10px; margin-top:20px;">
         <button type="submit" class="btn"><?= htmlspecialchars($translator->trans('example.create.submit')) ?></button>
-        <a href="/items" class="btn btn-secondary">Cancel</a>
+        <a href="/items" class="btn btn-secondary"><?= htmlspecialchars($translator->trans('example.create.cancel')) ?></a>
     </div>
 </form>
 

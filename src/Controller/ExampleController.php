@@ -3,64 +3,100 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Repository\ExampleRepository;
+use App\Security\Csrf;
+use App\Service\ExampleService;
 use Engine\Controller;
 use Engine\Request;
 use Engine\Response;
-use App\Repository\ExampleRepository;
-use App\Security\Csrf;
 
+/**
+ * Pełny przykład CRUD na encjach: lista, podgląd, dodawanie, usuwanie, szukanie.
+ * Kontroler zajmuje się tylko HTTP — walidacja siedzi w ExampleService.
+ */
 final class ExampleController extends Controller
 {
     public function index(Request $request, array $params = []): Response
     {
-        $repo  = new ExampleRepository($this->db());
-        $items = $repo->findAll();
+        $szukaj = $request->string('q');
 
-        return $this->render(BASE_PATH . '/templates/example/index', [
-            'items' => $items,
+        // findAll i searchByTitle oddają obiekty Example, nie tablice
+        $items = $szukaj === ''
+            ? $this->repository()->findAll('created_at DESC')
+            : $this->repository()->searchByTitle($szukaj);
+
+        return $this->render('example/index', [
+            'items'  => $items,
+            'szukaj' => $szukaj,
+            'csrf'   => Csrf::token(),
         ]);
     }
 
     public function show(Request $request, array $params = []): Response
     {
-        $repo = new ExampleRepository($this->db());
-        $item = $repo->findById((int) $params['id']);
+        $item = $this->repository()->findById((int) $params['id']);
 
         if ($item === null) {
-            return Response::notFound('Item not found.');
+            return Response::notFound($this->trans('example.errors.not_found'));
         }
 
-        return $this->render(BASE_PATH . '/templates/example/show', [
-            'item' => $item,
-        ]);
+        return $this->render('example/show', ['item' => $item]);
     }
 
     public function create(Request $request, array $params = []): Response
     {
         $errors = [];
+        $title  = '';
 
         if ($request->isPost()) {
-            if (!Csrf::verify((string) $request->post('csrf_token'))) {
-                $errors['form'] = 'Session expired. Please try again.';
+            $title = $request->string('title');
+
+            if (!Csrf::verify($request->string('csrf_token'))) {
+                // Wygasła sesja wygląda jak atak CSRF i odwrotnie — komunikat ten sam.
+                $errors['form'] = $this->trans('example.errors.csrf');
             } else {
-                $title = trim((string) $request->post('title'));
-
-                if ($title === '') {
-                    $errors['title'] = 'Title is required.';
-                }
-
-                if (empty($errors)) {
-                    $repo = new ExampleRepository($this->db());
-                    $repo->create($title);
+                try {
+                    $this->service()->create($title);
 
                     return $this->redirect('/items');
+                } catch (\InvalidArgumentException $e) {
+                    $errors['title'] = $e->getMessage();
                 }
             }
         }
 
-        return $this->render(BASE_PATH . '/templates/example/create', [
+        return $this->render('example/create', [
             'errors'    => $errors,
+            'title'     => $title, // przy błędzie wracamy z tym, co użytkownik już wpisał
             'csrfToken' => Csrf::token(),
         ]);
+    }
+
+    /** Usuwanie tylko POST-em: GET-a wywoła każdy podgląd linku albo robot. */
+    public function delete(Request $request, array $params = []): Response
+    {
+        if (!Csrf::verify($request->string('csrf_token'))) {
+            return (new Response())->setStatusCode(403)->setContent($this->trans('example.errors.csrf'));
+        }
+
+        $item = $this->repository()->findById((int) $params['id']);
+
+        if ($item === null) {
+            return Response::notFound($this->trans('example.errors.not_found'));
+        }
+
+        $this->repository()->delete($item);
+
+        return $this->redirect('/items');
+    }
+
+    private function repository(): ExampleRepository
+    {
+        return new ExampleRepository($this->db());
+    }
+
+    private function service(): ExampleService
+    {
+        return new ExampleService($this->repository(), $this->db());
     }
 }

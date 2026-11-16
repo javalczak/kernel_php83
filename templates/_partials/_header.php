@@ -3,11 +3,11 @@
 /** @var \Engine\Translation\Translator $translator */
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle ?? 'My App') ?></title>
+    <title><?= htmlspecialchars($pageTitle ?? 'Pure Kernel') ?></title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Verdana, sans-serif; font-size: 14px; color: #2c2c2c; background: #f5f5f5; }
@@ -24,15 +24,22 @@
         .btn:hover { background: #0055aa; }
         .btn-secondary { background: #e0e0e0; color: #444; }
         .btn-secondary:hover { background: #d0d0d0; }
+        .btn-link { background: none; border: none; color: #b42318; cursor: pointer; font-size: 13px; padding: 0; text-decoration: underline; }
         table { width: 100%; border-collapse: collapse; background: #fff; }
         table th, table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #ececec; }
         table th { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: normal; }
         .form-group { margin-bottom: 16px; }
+        .szukajka { display: flex; gap: 8px; margin-bottom: 16px; }
+        .szukajka input { max-width: 280px; }
+        .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 40px 44px; }
+        .badge { display: inline-block; background: #e8f0fe; color: #1a56cc; font-size: 11px; font-weight: bold; letter-spacing: 0.8px; text-transform: uppercase; padding: 3px 10px; border-radius: 10px; margin-bottom: 20px; }
+        .card p { color: #555; line-height: 1.8; margin-bottom: 14px; }
+        .card p:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
 <nav>
-    <a href="/">My App</a>
-    <a href="/items">Items</a>
+    <a href="/">Pure Kernel</a>
+    <a href="/items"><?= htmlspecialchars($translator->trans('example.index.title')) ?></a>
 </nav>
 <main>
