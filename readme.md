@@ -1,10 +1,10 @@
 # Pure Kernel
 
-Autorski micro-framework PHP 8.3 pod wdrożenie na **shared hostingu przez FTP** - bez Composera na serwerze, bez SSH, bez Dockera.
+Micro-framework PHP 8.3 pod shared hosting. Bez Composera na serwerze, bez SSH, bez Dockera.
 
 ## Dlaczego powstał
 
-Symfony i Laravel zakładają, że na serwerze da się odpalić `composer install`. Na najtańszych hostingach współdzielonych nie ma ani konsoli, ani SSH - jest FTP i panel. Pure Kernel rozwiązuje ten problem wprost: wrzucasz pliki, uzupełniasz dane bazy i strona działa. Żadnego kroku instalacyjnego po stronie serwera.
+Symfony i Laravel zakładają, że na serwerze da się odpalić `composer install`. Na najtańszych hostingach współdzielonych nie ma ani konsoli, ani SSH, jest FTP i panel. Tutaj wrzucasz pliki, uzupełniasz dane bazy i strona działa.
 
 Drugi powód jest prostszy: chciałem raz napisać routing i kontener sam, żeby wiedzieć, co siedzi pod spodem.
 
@@ -30,21 +30,21 @@ php tools/reset-db.php --force     # zakłada bazę, tabele i dane startowe
 php -S localhost:8000 router.php
 ```
 
-Wejdź na `http://localhost:8000` - strona główna i działający CRUD pod `/items`.
+`http://localhost:8000`, CRUD pod `/items`.
 
 ## Architektura
 
-Front controller + MVC, dziewięć klas silnika i jeden interfejs, zero zewnętrznych zależności.
+Front controller + MVC, dziewięć klas silnika i jeden interfejs, zero zależności.
 
 ```
 Żądanie → index.php (front controller)
              ↓
          Kernel::handle()
              ↓
-         Router::match()        ← dopasowanie {parametrów}, nazwy tras przez preg_quote
+         Router::match()
              ↓
          Controller::akcja()
-             ↓                  ← Repository → Entity (obiekty, nie tablice)
+             ↓              ← Repository → Entity
          Response::send()
 ```
 
@@ -54,13 +54,13 @@ Front controller + MVC, dziewięć klas silnika i jeden interfejs, zero zewnętr
 |---|---|
 | `Kernel` | Bootstrap, serwisy, dopasowanie trasy i wywołanie kontrolera |
 | `Router` | Rejestracja i dopasowanie tras z `{parametrami}` |
-| `Request` | Opakowanie na `$_GET`, `$_POST`, `$_FILES`, `$_SERVER`, `$_COOKIE` + `string()` i `int()` |
-| `Response` | Budowanie odpowiedzi HTTP, domyślnie `text/html; charset=utf-8` |
-| `Controller` | Baza kontrolerów - `render()`, `redirect()`, `json()`, `db()`, `trans()` |
+| `Request` | Opakowanie na `$_GET`, `$_POST`, `$_FILES`, `$_SERVER`, `$_COOKIE` |
+| `Response` | Budowanie odpowiedzi HTTP |
+| `Controller` | Baza kontrolerów: `render()`, `redirect()`, `json()`, `db()`, `trans()` |
 | `Database` | PDO: `fetchAll`, `fetchOne`, `insert`, `update`, `delete`, `transaction`, `identifier` |
-| `Repository` | Baza repozytoriów: CRUD na encjach dla jednej tabeli |
+| `Repository` | Baza repozytoriów, CRUD na encjach dla jednej tabeli |
 | `Entity` | Interfejs encji: `fromRow()`, `toRow()`, `getId()`, `withId()` |
-| `ServiceContainer` | Prosty kontener - `bind()` (za każdym razem nowy) i `singleton()` |
+| `ServiceContainer` | `bind()` i `singleton()` |
 | `Translator` | Tłumaczenia z `%placeholderami%`, język z ciasteczka `locale` |
 
 ### Autoloader
@@ -83,48 +83,45 @@ Trasy to tablica w `config/module.php`:
 
 Pierwsza pasująca trasa wygrywa, więc `/items/create` musi stać przed `/items/{id}`. Parametry `{id}` trafiają do metody kontrolera jako `$params`.
 
-Aplikacja może dorzucić własny plik `src/routes.php` w tym samym formacie, żeby nie puchł główny config.
+Aplikacja może dorzucić własny `src/routes.php` w tym samym formacie.
 
 ## Przykładowa aplikacja (`src/`, `templates/`)
 
-W repozytorium jest kompletny, działający CRUD: lista z wyszukiwarką, podgląd, dodawanie z walidacją i usuwanie. Pokazuje wszystkie warstwy naraz:
+Kompletny CRUD: lista z wyszukiwarką, podgląd, dodawanie z walidacją, usuwanie.
 
-- **Entity** (`src/Entity/Example.php`) - wiersz jako obiekt
-- **Repository** (`src/Repository/ExampleRepository.php`) - zapytania do jednej tabeli
-- **Service** (`src/Service/ExampleService.php`) - reguły domenowe i przykład transakcji
-- **Schema** (`src/Schema/`) - DDL jako kod PHP, instalowalny z przeglądarki
-- **Fixtures** (`src/Fixtures/AppFixtures.php`) - dane startowe dla deva
-- **Security** (`src/Security/Csrf.php`) - token CSRF dla formularzy
-
-Przykłady są celowo kompletne: łatwiej skopiować działający wzorzec niż odtwarzać go z dokumentacji.
+- Entity (`src/Entity/Example.php`)
+- Repository (`src/Repository/ExampleRepository.php`)
+- Service (`src/Service/ExampleService.php`), reguły domenowe i transakcja
+- Schema (`src/Schema/`), DDL jako kod PHP
+- Fixtures (`src/Fixtures/AppFixtures.php`)
+- Security (`src/Security/Csrf.php`)
 
 ## Bezpieczeństwo
 
-Co jest wbudowane w szkielet:
+PDO z `ATTR_EMULATE_PREPARES = false`, więc wartości nigdy nie są częścią zapytania. Nazw tabel i kolumn parametrem się nie przekaże, te idą przez `Database::identifier()`: biała lista znaków plus backticki. `ORDER BY` ma osobną walidację. `UPDATE` i `DELETE` bez `WHERE` rzucają wyjątkiem.
 
-- **SQL**: PDO z `ATTR_EMULATE_PREPARES = false` - wartości nigdy nie są częścią zapytania. Nazwy tabel i kolumn, których nie da się przekazać przez parametr, przechodzą przez `Database::identifier()` (biała lista znaków + backticki). `ORDER BY` jest walidowany osobno. `UPDATE` i `DELETE` bez `WHERE` rzucają wyjątkiem.
-- **CSRF**: token sesyjny porównywany przez `hash_equals()`, wymagany w każdym formularzu POST. Usuwanie wyłącznie POST-em.
-- **Sesja**: `HttpOnly`, `SameSite=Lax`, `secure` po HTTPS, czas życia 96 minut.
-- **Nagłówki**: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
-- **Ścieżki**: język z ciasteczka ograniczony białą listą (bez tego ciasteczko `locale` wczytywało dowolny plik PHP), nazwy szablonów walidowane, serwer deweloperski oddaje pliki tylko z `assets/` i `tools/`.
-- **XSS**: wszystkie dane w szablonach idą przez `htmlspecialchars()`.
+Token CSRF siedzi w sesji, porównywany przez `hash_equals()`, wymagany w każdym POST. Usuwanie tylko POST-em.
 
-Czego tu nie ma, a bywa potrzebne: logowania i haseł, uploadu plików, limitów na liczbę żądań. To dokłada się per projekt.
+Sesja: `HttpOnly`, `SameSite=Lax`, `secure` po HTTPS, 96 minut. Nagłówki: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`. W szablonach wszystko idzie przez `htmlspecialchars()`.
+
+Język z ciasteczka ograniczony białą listą, bez tego `locale` wczytywało dowolny plik PHP z dysku. Nazwy szablonów walidowane. Serwer deweloperski oddaje pliki tylko z `assets/` i `tools/`.
+
+Nie ma tu logowania, uploadu plików ani limitów na liczbę żądań. Dokładam per projekt.
 
 ## Wdrożenie na shared hosting
 
-1. Wgraj przez FTP całość **oprócz** `tools/` i `router.php`.
-2. Uzupełnij `config/database.php` danymi z panelu hostingu.
-3. Upewnij się, że `.htaccess` wjechał razem z resztą (bywa ukryty w kliencie FTP) - to on kieruje cały ruch do `index.php` i blokuje dostęp do `config/`, `engine/`, `src/` i `templates/`.
-4. Tabele załóż raz, lokalnie, i wyeksportuj dumpa - albo wgraj `tools/` na chwilę, odpal reset i skasuj katalog.
+1. Wgraj przez FTP całość oprócz `tools/` i `router.php`.
+2. Uzupełnij `config/database.php` danymi z panelu.
+3. Sprawdź, czy `.htaccess` wjechał, bo bywa ukryty w kliencie FTP. To on kieruje ruch do `index.php` i blokuje `config/`, `engine/`, `src/` i `templates/`.
+4. Tabele załóż lokalnie i wyeksportuj dumpa. Albo wgraj `tools/` na chwilę, odpal reset i skasuj katalog.
 
-## Narzędzia deweloperskie (`tools/`)
+## Narzędzia (`tools/`)
 
 ```bash
 php tools/reset-db.php --force   # drop + create + fixtures
 php tools/smoke-test.php         # 24 sprawdzenia encji, repozytorium i walidacji
 ```
 
-`reset-db.php` działa też z przeglądarki (`/tools/reset-db.php?token=...`), ale tylko z localhosta i tylko z tokenem z konfiguracji. Na produkcję tego katalogu się nie wgrywa.
+`reset-db.php` chodzi też z przeglądarki (`/tools/reset-db.php?token=...`), ale tylko z localhosta i tylko z tokenem z konfiguracji. Na produkcję tego katalogu się nie wgrywa.
 
-`smoke-test.php` to świadomie proste rozwiązanie: projekt nie używa Composera, więc nie ma w nim PHPUnita. Testy robią przejście przez prawdziwą bazę i sprzątają po sobie.
+Bez Composera nie ma PHPUnita, więc `smoke-test.php` jest ręczny. Jedzie po prawdziwej bazie i sprząta po sobie.
