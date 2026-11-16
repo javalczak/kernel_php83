@@ -1,0 +1,18 @@
+# Front controller dla Apache (shared hosting).
+# Wbudowany serwer PHP tego pliku nie czyta — tam rolę pełni router.php.
+
+RewriteEngine On
+
+# Istniejące pliki (css, js, obrazki) serwuj wprost, resztę przekieruj do index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Katalogi z kodem i konfiguracją mają być niewidoczne z przeglądarki,
+# nawet gdyby ktoś wgrał je na serwer razem z resztą.
+RedirectMatch 404 ^/(config|engine|src|templates|tools)/
+RedirectMatch 404 ^/\.git
+
+<FilesMatch "\.(md|json|lock|sql)$">
+    Require all denied
+</FilesMatch>

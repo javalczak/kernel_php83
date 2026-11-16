@@ -1,0 +1,13 @@
+# Repozytorium jest publiczne i klonuje się je i na Linuksie, i na Windowsie.
+# W commitach trzymamy jeden format końca linii (LF), niezależnie od systemu.
+* text=auto eol=lf
+
+# Binaria git ma zostawić w spokoju — bez konwersji końców linii.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
