@@ -6,7 +6,7 @@ Autorski micro-framework PHP 8.3 pod wdrożenie na **shared hostingu przez FTP**
 
 Symfony i Laravel zakładają, że na serwerze da się odpalić `composer install`. Na najtańszych hostingach współdzielonych nie ma ani konsoli, ani SSH — jest FTP i panel. Pure Kernel rozwiązuje ten problem wprost: wrzucasz pliki, uzupełniasz dane bazy i strona działa. Żadnego kroku instalacyjnego po stronie serwera.
 
-Drugi powód jest taki, że chciałem mieć szkielet, w którym rozumiem każdą linię. Przy pięciu klasach silnika da się to ogarnąć w godzinę; przy Symfony nie da się wcale.
+Drugi powód jest osobisty: routing, kontener i cykl życia żądania najłatwiej zrozumieć, pisząc je raz samemu. To nie jest zarzut wobec Symfony — wszędzie, gdzie da się je wdrożyć, dalej sięgam po nie pierwszy.
 
 ## Wymagania
 
