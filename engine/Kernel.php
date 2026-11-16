@@ -9,7 +9,6 @@ class Kernel
 {
     private ServiceContainer $container;
     private Router $router;
-    private string $version = '1.0.0';
 
     public function __construct()
     {
@@ -20,7 +19,7 @@ class Kernel
     public function boot(): void
     {
         $this->registerCoreServices();
-        $this->loadModules();
+        $this->loadTranslations();
         $this->registerRoutes();
     }
 
@@ -46,7 +45,9 @@ class Kernel
 
         $controller = new $controllerClass($this->container);
 
-        if (!method_exists($controller, $action)) {
+        // method_exists tu nie wystarczy: widzi też metody prywatne i chronione,
+        // a wywołanie takiej z zewnątrz kończy się błędem 500 zamiast czystym 404.
+        if (!$this->akcjaPubliczna($controller, $action)) {
             return Response::notFound('Akcja nie istnieje.');
         }
 
@@ -55,50 +56,45 @@ class Kernel
         return $controller->$action($request, $params);
     }
 
+    public function getContainer(): ServiceContainer
+    {
+        return $this->container;
+    }
+
     // -------------------------------------------------------------------------
     // Prywatne
     // -------------------------------------------------------------------------
 
+    private function akcjaPubliczna(object $controller, string $action): bool
+    {
+        if (!method_exists($controller, $action)) {
+            return false;
+        }
+
+        return (new \ReflectionMethod($controller, $action))->isPublic();
+    }
+
     private function registerCoreServices(): void
     {
-        // Database
+        // singleton, nie bind: połączenie z bazą ma powstać raz na żądanie i dopiero
+        // przy pierwszym użyciu — strona bez zapytań do bazy w ogóle go nie otwiera.
         $this->container->singleton('db', function () {
             $config = require BASE_PATH . '/config/database.php';
+
             return new Database($config);
         });
 
-        // Translator
         $this->container->singleton('translator', function () {
-            $locale = $_COOKIE['locale'] ?? 'en';
-            return new Translator($locale);
+            // Nieznana wartość w ciasteczku wraca do domyślnego języka (patrz Translator).
+            return new Translator((string) ($_COOKIE['locale'] ?? 'en'));
         });
     }
 
-    private function loadModules(): void
+    private function loadTranslations(): void
     {
-        $modulesPath = BASE_PATH . '/modules';
-
-        if (is_dir($modulesPath)) {
-            foreach (glob($modulesPath . '/*/module.php') as $moduleFile) {
-                $module = require $moduleFile;
-
-                if (!is_array($module)) {
-                    continue;
-                }
-
-                // Tłumaczenia modułu
-                if (isset($module['path'])) {
-                    /** @var Translator $translator */
-                    $translator = $this->container->make('translator');
-                    $translator->loadModule($module['path']);
-                }
-            }
-        }
-
-        // src/ nadpisuje tłumaczenia
         /** @var Translator $translator */
         $translator = $this->container->make('translator');
-        $translator->loadApp(BASE_PATH . '/src');
+        $translator->load(BASE_PATH . '/src');
     }
 
     private function registerRoutes(): void
@@ -106,36 +102,16 @@ class Kernel
         $module = require BASE_PATH . '/config/module.php';
 
         foreach ($module['routes'] as $route) {
-            $this->router->add(
-                $route['method'],
-                $route['path'],
-                $route['controller'],
-                $route['action']
-            );
+            $this->router->add($route['method'], $route['path'], $route['controller'], $route['action']);
         }
 
-        // src/ może dorzucić własne trasy
+        // Opcjonalnie: src/routes.php dokłada trasy aplikacji, żeby nie puchł config/module.php.
         $appRoutes = BASE_PATH . '/src/routes.php';
-        if (file_exists($appRoutes)) {
-            $routes = require $appRoutes;
-            foreach ($routes as $route) {
-                $this->router->add(
-                    $route['method'],
-                    $route['path'],
-                    $route['controller'],
-                    $route['action']
-                );
+
+        if (is_file($appRoutes)) {
+            foreach (require $appRoutes as $route) {
+                $this->router->add($route['method'], $route['path'], $route['controller'], $route['action']);
             }
         }
-    }
-
-    public function getVersion(): string
-    {
-        return $this->version;
-    }
-
-    public function getContainer(): ServiceContainer
-    {
-        return $this->container;
     }
 }
